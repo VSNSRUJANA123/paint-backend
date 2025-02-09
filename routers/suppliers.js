@@ -49,9 +49,9 @@ router.post("/", verifyToken, roleMiddileware("admin"), (req, res) => {
     website,
     description,
   } = req.body;
-
+  // console.log("company_id", company_id, typeof company_id);
   if (!firstname || !phonenumber || !company_id) {
-    return res.status(403).send("required fields");
+    return res.status(403).send({ message: "required fields" });
   }
   const companyQuery = "select * from company where id=? ";
   db.query(companyQuery, [company_id], (err, result) => {
@@ -64,7 +64,7 @@ router.post("/", verifyToken, roleMiddileware("admin"), (req, res) => {
     if (result.length === 0) {
       return res.status(200).json({ message: "company not found" });
     }
-    console.log("yes i am here");
+    // console.log("yes i am here");
     const supplierQuery = `insert into suppliers(firstname,
         lastname,
         email,
