@@ -47,7 +47,7 @@ router.post("/", verifyToken, roleMiddileware("admin"), (req, res) => {
     status,
   } = req.body;
   // console.log("post employee", req.body);
-  if (!firstname || !email || !phonenumber || !company_name || !address) {
+  if (!firstname || !phonenumber || !company_name || !address) {
     return res.status(400).json({ error: "All fields are required" });
   }
   // console.log(

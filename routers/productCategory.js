@@ -17,12 +17,12 @@ router.post(
   upload.single("CategoryImage"),
   async (req, res) => {
     const { CategoryName, CategoryDesc, CategoryCode, IsActive } = req.body;
-    if (!CategoryName || !CategoryCode || !IsActive) {
+    if (!CategoryName || !CategoryCode) {
       return res.send({ message: "require all fields" });
     }
-    if (!req.file) {
-      return res.status(400).send({ message: "Please upload an image" });
-    }
+    // if (!req.file) {
+    //   return res.status(400).send({ message: "Please upload an image" });
+    // }
     const imageUrl = `${req.protocol}://${req.get("host")}/uploads/${
       req.file.filename
     }`;
@@ -79,9 +79,9 @@ router.put(
   (req, res) => {
     const { CategoryId } = req.params;
     const { CategoryName, CategoryDesc, CategoryCode, IsActive } = req.body;
-    if (!req.file) {
-      return res.status(400).send({ message: "Please upload an image" });
-    }
+    // if (!req.file) {
+    //   return res.status(400).send({ message: "Please upload an image" });
+    // }
     const imageUrl = `${req.protocol}://${req.get("host")}/uploads/${
       req.file.filename
     }`;
