@@ -42,7 +42,6 @@ router.post("/", verifyToken, roleMiddileware("admin"), (req, res) => {
     ProductCategoryID,
     addedBy,
     ModifiedBy,
-    supplier_id,
   } = req.body;
   if (
     !ProductCode ||
@@ -56,8 +55,7 @@ router.post("/", verifyToken, roleMiddileware("admin"), (req, res) => {
     MinimumReorderQuantity == null ||
     ProductCategoryID == null ||
     !addedBy ||
-    !ModifiedBy ||
-    !supplier_id
+    !ModifiedBy
   ) {
     // console.log(
     //   ProductCode,
@@ -75,17 +73,8 @@ router.post("/", verifyToken, roleMiddileware("admin"), (req, res) => {
     // );
     return res.status(403).send({ message: "required all fields" });
   }
-  const supplierQuery = "select * from suppliers where id=?";
-  db.query(supplierQuery, [supplier_id], (err, result) => {
-    if (err) {
-      return res
-        .status(403)
-        .send({ message: "something error to get supplierId" });
-    }
-    if (result.length === 0) {
-      return res.send({ message: "supplier not found" });
-    }
-    const productQuery = `insert into Products (ProductCode,
+
+  const productQuery = `insert into Products (ProductCode,
     ProductName,
     ProductDescription,
     StandardUnitCost,
@@ -97,42 +86,40 @@ router.post("/", verifyToken, roleMiddileware("admin"), (req, res) => {
     MinimumReorderQuantity,
     ProductCategoryID,
     addedBy,
-    ModifiedBy,AddedOn,supplier_id) values (?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),?)`;
-    db.query(
-      productQuery,
-      [
-        ProductCode,
-        ProductName,
-        ProductDescription,
-        StandardUnitCost,
-        UnitPrice,
-        ReorderLevel,
-        TargetLevel,
-        QuantityPerUnit,
-        Discontinued,
-        MinimumReorderQuantity,
-        ProductCategoryID,
-        addedBy,
-        ModifiedBy,
-        supplier_id,
-      ],
-      (err, result) => {
-        if (err) {
-          return res.status(403).send({
-            message: "something wrong check it again or enter unique id",
-          });
-        }
-        if (result.affectedRows === 0) {
-          return res.status(403).send({ message: "must add unique id" });
-        }
-        res.status(201).json({
-          message: "Products added successfully",
-          productId: result.insertId,
-          productData: req.body,
+    ModifiedBy,AddedOn) values (?,?,?,?,?,?,?,?,?,?,?,?,?,NOW())`;
+  db.query(
+    productQuery,
+    [
+      ProductCode,
+      ProductName,
+      ProductDescription,
+      StandardUnitCost,
+      UnitPrice,
+      ReorderLevel,
+      TargetLevel,
+      QuantityPerUnit,
+      Discontinued,
+      MinimumReorderQuantity,
+      ProductCategoryID,
+      addedBy,
+      ModifiedBy,
+    ],
+    (err, result) => {
+      if (err) {
+        return res.status(403).send({
+          message: "something wrong check it again or enter unique id",
         });
       }
-    );
-  });
+      if (result.affectedRows === 0) {
+        return res.status(403).send({ message: "must add unique id" });
+      }
+      res.status(201).json({
+        message: "Products added successfully",
+        productId: result.insertId,
+        productData: req.body,
+      });
+    }
+  );
 });
 
 router.put("/:id", verifyToken, roleMiddileware("admin"), (req, res) => {
@@ -150,7 +137,6 @@ router.put("/:id", verifyToken, roleMiddileware("admin"), (req, res) => {
     MinimumReorderQuantity,
     ProductCategoryID,
     ModifiedBy,
-    supplier_id,
   } = req.body;
   // if (
   //   !ProductCode ||
@@ -180,17 +166,8 @@ router.put("/:id", verifyToken, roleMiddileware("admin"), (req, res) => {
   //   );
   //   return res.status(403).send({ message: "required all fields" });
   // }
-  const supplierQuery = "select * from suppliers where id=?";
-  db.query(supplierQuery, [supplier_id], (err, result) => {
-    if (err) {
-      return res
-        .status(403)
-        .send({ message: "something error to get supplierId" });
-    }
-    if (result.length === 0) {
-      return res.send({ message: "supplier not found" });
-    }
-    const productUpdate = `update Products set ProductCode=?,
+
+  const productUpdate = `update Products set ProductCode=?,
     ProductName=?,
     ProductDescription = ?,
     StandardUnitCost=?,
@@ -201,47 +178,47 @@ router.put("/:id", verifyToken, roleMiddileware("admin"), (req, res) => {
     Discontinued=?,
     MinimumReorderQuantity=?,
     ProductCategoryID=?,        
-    ModifiedBy=?,supplier_id=?,ModifiedOn=now() where ProductID=?`;
-    db.query(
-      productUpdate,
-      [
-        ProductCode,
-        ProductName,
-        ProductDescription,
-        StandardUnitCost,
-        UnitPrice,
-        ReorderLevel,
-        TargetLevel,
-        QuantityPerUnit,
-        Discontinued,
-        MinimumReorderQuantity,
-        ProductCategoryID,
-        ModifiedBy,
-        supplier_id,
-        productIndex,
-      ],
-      (err, result) => {
-        if (err) {
-          return res.status(500).send({ message: "failed to update product" });
-        }
-        if (result.affectedRows === 0) {
-          return res.status(404).send({ message: "product doesn't exist" });
-        }
-        res.status(200).json({
-          message: "successfully updated product",
-          productId: productIndex,
-          productData: req.body,
-        });
+    ModifiedBy=?,ModifiedOn=now() where ProductID=?`;
+  db.query(
+    productUpdate,
+    [
+      ProductCode,
+      ProductName,
+      ProductDescription,
+      StandardUnitCost,
+      UnitPrice,
+      ReorderLevel,
+      TargetLevel,
+      QuantityPerUnit,
+      Discontinued,
+      MinimumReorderQuantity,
+      ProductCategoryID,
+      ModifiedBy,
+      productIndex,
+    ],
+    (err, result) => {
+      if (err) {
+        return res
+          .status(500)
+          .send({ message: "failed to update product", err });
       }
-    );
-  });
+      if (result.affectedRows === 0) {
+        return res.status(404).send({ message: "product doesn't exist" });
+      }
+      res.status(200).json({
+        message: "successfully updated product",
+        productId: productIndex,
+        productData: req.body,
+      });
+    }
+  );
 });
 router.delete("/:id", verifyToken, roleMiddileware("admin"), (req, res) => {
   const deleteIndex = req.params.id;
   const deleteQueryId = `delete from Products where ProductID=?`;
   db.query(deleteQueryId, [deleteIndex], (err, result) => {
     if (err) {
-      return res.status(500).send({ message: "failed to fetch id" });
+      return res.status(500).send({ message: "failed to delete id", err });
     }
     if (result.affectedRows === 0) {
       return res.status(404).send({ message: "product not found" });
