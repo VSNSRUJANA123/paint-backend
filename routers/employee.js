@@ -8,7 +8,9 @@ router.get("/", verifyToken, roleMiddileware("admin"), (req, res) => {
     const query = "SELECT * FROM employees";
     db.query(query, (err, result) => {
       if (err) {
-        return res.status(500).send("Failed to retrieve employees");
+        return res
+          .status(403)
+          .send({ message: "Failed to retrieve employees" });
       }
       res.status(200).json(result);
     });
@@ -45,15 +47,7 @@ router.post("/", verifyToken, roleMiddileware("admin"), (req, res) => {
     status,
   } = req.body;
   // console.log("post employee", req.body);
-  if (
-    !firstname ||
-    !lastname ||
-    !email ||
-    !phonenumber ||
-    !job_title ||
-    !company_name ||
-    !address
-  ) {
+  if (!firstname || !email || !phonenumber || !company_name || !address) {
     return res.status(400).json({ error: "All fields are required" });
   }
   // console.log(
@@ -96,7 +90,6 @@ router.post("/", verifyToken, roleMiddileware("admin"), (req, res) => {
 
 router.put("/:id", verifyToken, roleMiddileware("admin"), (req, res) => {
   const { id } = req.params;
-
   const {
     firstname,
     lastname,
@@ -107,17 +100,17 @@ router.put("/:id", verifyToken, roleMiddileware("admin"), (req, res) => {
     address,
     status,
   } = req.body;
-  if (
-    !firstname ||
-    !lastname ||
-    !email ||
-    !phonenumber ||
-    !job_title ||
-    !company_name ||
-    !address
-  ) {
-    return res.status(400).json({ error: "All fields are required" });
-  }
+  // if (
+  //   !firstname ||
+  //   !lastname ||
+  //   !email ||
+  //   !phonenumber ||
+  //   !job_title ||
+  //   !company_name ||
+  //   !address
+  // ) {
+  //   return res.status(400).json({ error: "All fields are required" });
+  // }
   const query = `UPDATE employees SET firstname = ?, lastname = ?, email = ?,phonenumber=?,job_title=?, company_name = ?, address = ?,status=? WHERE id = ?`;
   db.query(
     query,

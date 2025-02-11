@@ -54,7 +54,6 @@ router.post("/add-purchase", (req, res) => {
         const purchaseOrderDetailQuery =
           "select IFNULL(max(purchaseOrderDetailId),0) as purchaseOrderDetailId from purchaseOrderDetail";
         // const purchaseId = result.insertId;
-
         db.query(purchaseOrderDetailQuery, (err, result) => {
           if (err) {
             return res.status(403).send("error to create");

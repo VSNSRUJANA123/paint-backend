@@ -17,8 +17,8 @@ router.post(
   upload.single("CategoryImage"),
   async (req, res) => {
     const { CategoryName, CategoryDesc, CategoryCode, IsActive } = req.body;
-    if (!CategoryName || !CategoryDesc || !CategoryCode || !IsActive) {
-      return res.send("require all fields");
+    if (!CategoryName || !CategoryCode || !IsActive) {
+      return res.send({ message: "require all fields" });
     }
     if (!req.file) {
       return res.status(400).send({ message: "Please upload an image" });
@@ -31,11 +31,11 @@ router.post(
     );
     db.query(result, (err, result) => {
       if (err) {
-        return req.send("error to get id");
+        return req.send({ message: "error to get id" });
       }
       const index = result[0];
       if (!result[0]) {
-        return res.send("invalid index");
+        return res.send({ message: "invalid index" });
       }
       const { max_id } = index;
       const insertQuery = `insert into productCategory(CategoryId,
@@ -56,9 +56,16 @@ router.post(
         ],
         (err, result) => {
           if (err) {
-            return res.status(403).send("something error");
+            return res.status(403).send({
+              message: "failed to add productCategory and enter unique code",
+              err,
+            });
           }
-          return res.send("Inserted added successfully");
+          return res.send({
+            message: "Inserted added successfully",
+            productCategoryId: result.insertId,
+            productCategoryData: req.body,
+          });
         }
       );
     });
@@ -78,8 +85,8 @@ router.put(
     const imageUrl = `${req.protocol}://${req.get("host")}/uploads/${
       req.file.filename
     }`;
-    if (!CategoryName || !CategoryDesc || !CategoryCode || !IsActive) {
-      return res.send(403).status("required all fields");
+    if (!CategoryName || !CategoryCode) {
+      return res.status(403).send({ message: "required all fields" });
     }
     const updateQuery = `update productCategory set CategoryName=?,
         CategoryDesc=?,
@@ -98,12 +105,16 @@ router.put(
       ],
       (err, result) => {
         if (err) {
-          return res.send("error to update values");
+          return res.send({ message: "error to update values" });
         }
         if (result.affectedRows === 0) {
-          return res.send("failed to update");
+          return res.send({ message: "failed to update" });
         }
-        return res.send("update data successfully");
+        return res.send({
+          message: "update data successfully",
+          productCategoryId: CategoryId,
+          productCategoryData: req.body,
+        });
       }
     );
   }
@@ -115,22 +126,22 @@ router.delete(
   (req, res) => {
     const { CategoryId } = req.params;
     if (!CategoryId) {
-      return res.send("invalid id");
+      return res.send({ message: "invalid id" });
     }
     const checkId = "select * from productCategory where CategoryId =?";
     db.query(checkId, CategoryId, (err, result) => {
       if (err) {
-        return res.send("error to delete");
+        return res.send({ message: "error to delete" });
       }
       if (result.length === 0) {
-        return res.send("data not found");
+        return res.send({ message: "data not found" });
       }
       const deleteQuery = "delete from productCategory where CategoryId=?";
       db.query(deleteQuery, CategoryId, (err, result) => {
         if (err) {
-          return res.send("error to delete");
+          return res.send({ message: "error to delete" });
         }
-        return res.send("delete productCategory Successfully");
+        return res.send({ message: "delete productCategory Successfully" });
       });
     });
   }
