@@ -26,7 +26,10 @@ router.get("/", (req, res) => {
     return res.status(403).send("server error");
   }
 });
-
+router.post("/vendorList/:id", (req, res) => {
+  const { id } = req.params;
+  const selectId = "select * from suppliers";
+});
 router.post("/add-purchase", (req, res) => {
   const { vendorId, submittedById, notes, products } = req.body;
   if (!vendorId || !submittedById || !products || products.length === 0) {
