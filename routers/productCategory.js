@@ -106,7 +106,7 @@ router.put(
       ],
       (err, result) => {
         if (err) {
-          return res.send({ message: "error to update values" });
+          return res.send({ message: "error to update values", err });
         }
         if (result.affectedRows === 0) {
           return res.send({ message: "productCategory not found" });

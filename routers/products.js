@@ -3,7 +3,7 @@ const db = require("../config/db");
 const verifyToken = require("../middleware/authMiddleware");
 const roleMiddileware = require("../middleware/roleMiddleware");
 const router = express.Router();
-router.get("/", verifyToken, roleMiddileware("admin"), (req, res) => {
+router.get("/", verifyToken, (req, res) => {
   const query = `select * from Products`;
   db.query(query, (err, result) => {
     if (err) {
@@ -42,6 +42,7 @@ router.post("/", verifyToken, roleMiddileware("admin"), (req, res) => {
     ProductCategoryID,
     addedBy,
     ModifiedBy,
+    supplier_id,
   } = req.body;
   if (
     !ProductCode ||
@@ -55,7 +56,8 @@ router.post("/", verifyToken, roleMiddileware("admin"), (req, res) => {
     MinimumReorderQuantity == null ||
     ProductCategoryID == null ||
     !addedBy ||
-    !ModifiedBy
+    !ModifiedBy ||
+    !supplier_id
   ) {
     // console.log(
     //   ProductCode,
@@ -73,7 +75,6 @@ router.post("/", verifyToken, roleMiddileware("admin"), (req, res) => {
     // );
     return res.status(403).send({ message: "required all fields" });
   }
-
   const productQuery = `insert into Products (ProductCode,
     ProductName,
     ProductDescription,
@@ -113,10 +114,30 @@ router.post("/", verifyToken, roleMiddileware("admin"), (req, res) => {
       if (result.affectedRows === 0) {
         return res.status(403).send({ message: "must add unique id" });
       }
-      res.status(201).json({
-        message: "Products added successfully",
-        productId: result.insertId,
-        productData: req.body,
+      const checkSupplierId = "select * from suppliers where id=?";
+      db.query(checkSupplierId, [supplier_id], (err, result) => {
+        if (err) {
+          return res.status(403).send({ message: "error to get supplierId" });
+        }
+        if (result.length === 0) {
+          return res.status(403).send({ message: "supplierId not found" });
+        }
+        const inserts =
+          "insert into supplierProductTable (supplierId) values(?)";
+        db.query(inserts, [supplier_id], (err, result) => {
+          if (err) {
+            return res.status(403).send({ message: "query error", err });
+          }
+          res.status(200).json({
+            message: "Products added successfully",
+            productId: result.insertId,
+            productData: {
+              ...req.body,
+              supplier_id,
+              AddedOn: new Date().toISOString(),
+            },
+          });
+        });
       });
     }
   );
@@ -137,36 +158,8 @@ router.put("/:id", verifyToken, roleMiddileware("admin"), (req, res) => {
     MinimumReorderQuantity,
     ProductCategoryID,
     ModifiedBy,
+    supplier_id,
   } = req.body;
-  // if (
-  //   !ProductCode ||
-  //   !ProductName ||
-  //   StandardUnitCost == null ||
-  //   UnitPrice == null ||
-  //   ReorderLevel == null ||
-  //   TargetLevel == null ||
-  //   !QuantityPerUnit ||
-  //   Discontinued == null ||
-  //   MinimumReorderQuantity == null ||
-  //   ProductCategoryID == null ||
-  //   !ModifiedBy
-  // ) {
-  //   console.log(
-  //     ProductCode,
-  //     ProductName,
-  //     StandardUnitCost,
-  //     UnitPrice,
-  //     ReorderLevel,
-  //     TargetLevel,
-  //     QuantityPerUnit,
-  //     Discontinued,
-  //     MinimumReorderQuantity,
-  //     ProductCategoryID,
-  //     ModifiedBy
-  //   );
-  //   return res.status(403).send({ message: "required all fields" });
-  // }
-
   const productUpdate = `update Products set ProductCode=?,
     ProductName=?,
     ProductDescription = ?,
@@ -205,10 +198,29 @@ router.put("/:id", verifyToken, roleMiddileware("admin"), (req, res) => {
       if (result.affectedRows === 0) {
         return res.status(404).send({ message: "product doesn't exist" });
       }
-      res.status(200).json({
-        message: "successfully updated product",
-        productId: productIndex,
-        productData: req.body,
+      const checkSupplierId = "select * from suppliers where id=?";
+      db.query(checkSupplierId, [supplier_id], (err, result) => {
+        if (err) {
+          return res.status(403).send({ message: "error to get supplierId" });
+        }
+        if (result.length === 0) {
+          return res.status(403).send({ message: "supplierId not found" });
+        }
+        const inserts = "update supplierProductTable set supplierId=?";
+        db.query(inserts, [supplier_id], (err, result) => {
+          if (err) {
+            return res.status(403).send({ message: "query error", err });
+          }
+          res.status(200).json({
+            message: "Products updated successfully",
+            productId: productIndex,
+            productData: {
+              ...req.body,
+              supplier_id,
+              ModifiedBy: new Date(),
+            },
+          });
+        });
       });
     }
   );
@@ -227,3 +239,14 @@ router.delete("/:id", verifyToken, roleMiddileware("admin"), (req, res) => {
   });
 });
 module.exports = router;
+
+// const getId = "select * from Products where id=?";
+// db.query(getId, result.insertId, (err, result) => {
+//   if (err) {
+//     return res.status(403).send({ message: "" });
+//   }
+//   return res.status(201).json({
+//     message: "Products added successfully",
+//     productData: result,
+//   });
+// });
