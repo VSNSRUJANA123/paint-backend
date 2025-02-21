@@ -105,13 +105,13 @@ router.post("/", verifyToken, roleMiddileware("admin"), (req, res) => {
       addedBy,
       ModifiedBy,
     ],
-    (err, result) => {
+    (err, results) => {
       if (err) {
         return res.status(403).send({
           message: "something wrong check it again or enter unique id",
         });
       }
-      if (result.affectedRows === 0) {
+      if (results.affectedRows === 0) {
         return res.status(403).send({ message: "must add unique id" });
       }
       const checkSupplierId = "select * from suppliers where id=?";
@@ -128,9 +128,10 @@ router.post("/", verifyToken, roleMiddileware("admin"), (req, res) => {
           if (err) {
             return res.status(403).send({ message: "query error", err });
           }
+          console.log(result.insertId);
           res.status(200).json({
             message: "Products added successfully",
-            productId: result.insertId,
+            productId: results.insertId,
             productData: {
               ...req.body,
               supplier_id,
