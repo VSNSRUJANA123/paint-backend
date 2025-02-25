@@ -1,72 +1,95 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../config/db");
-router.get("/", (req, res) => {
-  const getQuery = "select * from purchaseorderstatus";
-  db.query(getQuery, (err, result) => {
-    return res.send(result);
-  });
-});
-router.post("/", (req, res) => {
-  const { statusName } = req.body;
-  if (!statusName) {
-    return res.send("required all fields");
+
+// GET all statuses
+router.get("/", async (req, res) => {
+  try {
+    const [rows] = await db.execute("SELECT * FROM purchaseorderstatus");
+    res.send(rows);
+  } catch (err) {
+    res.status(500).send({ message: err.message });
   }
+});
+
+// POST new status
+router.post("/", async (req, res) => {
+  const { statusName } = req.body;
+
+  if (!statusName) {
+    return res.status(400).send({ message: "All fields are required" });
+  }
+
   const formattedName = statusName
-    .replace(/[^\w\s]/g, "") // Remove punctuation
-    .replace(/\s+/g, " ") // Replace multiple spaces with a single space
-    .trim(); // Trim leading and trailing spaces
+    .replace(/[^\w\s]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
   if (!formattedName) {
     return res
       .status(400)
-      .send("Product name cannot be empty after formatting.");
+      .send({ message: "Status name cannot be empty after formatting." });
   }
-  const index =
-    "select IFNULL(max(statusId),0) as statusId from purchaseorderstatus";
-  db.query(index, (err, result) => {
-    if (err) {
-      return res.send("err to generate index");
-    }
+
+  try {
+    const [result] = await db.execute(
+      "SELECT IFNULL(MAX(statusId),0) AS statusId FROM purchaseorderstatus"
+    );
     const { statusId } = result[0];
-    const postQuery =
-      "insert into purchaseorderstatus(statusId,statusName) values(?,?)";
-    db.query(postQuery, [statusId + 1, statusName], (err, result) => {
-      if (err) {
-        return res.status(403).send(err);
-      }
-      return res.send("insert purchaseOrderStatus successfully");
-    });
-  });
+
+    await db.execute(
+      "INSERT INTO purchaseorderstatus (statusId, statusName) VALUES (?, ?)",
+      [statusId + 1, formattedName]
+    );
+
+    res.send({ message: "Inserted purchaseOrderStatus successfully" });
+  } catch (err) {
+    res.status(500).send({ message: "Error inserting data" });
+  }
 });
-router.put("/:statusId", (req, res) => {
+
+// PUT update status
+router.put("/:statusId", async (req, res) => {
   const { statusId } = req.params;
   const { statusName } = req.body;
+
   if (!statusName) {
-    return res.send("required fields");
+    return res.status(400).send({ message: "All fields are required" });
   }
-  const updateQuery =
-    "update purchaseorderstatus set statusName=? where statusId=?";
-  db.query(updateQuery, [statusName, statusId], (err, result) => {
-    if (err) {
-      return res.send("err");
-    }
+
+  try {
+    const [result] = await db.execute(
+      "UPDATE purchaseorderstatus SET statusName = ? WHERE statusId = ?",
+      [statusName, statusId]
+    );
+
     if (result.affectedRows === 0) {
-      return res.send("data not found");
+      return res.status(404).send({ message: "Data not found" });
     }
-    return res.send("update status successfully");
-  });
+
+    res.send({ message: "Updated status successfully" });
+  } catch (err) {
+    res.status(500).send({ message: "Error updating data" });
+  }
 });
-router.delete("/:statusId", (req, res) => {
+
+// DELETE status
+router.delete("/:statusId", async (req, res) => {
   const { statusId } = req.params;
-  const deleteQuery = "delete from purchaseorderstatus where statusId=?";
-  db.query(deleteQuery, [statusId], (err, result) => {
-    if (err) {
-      return res.send(err);
-    }
+
+  try {
+    const [result] = await db.execute(
+      "DELETE FROM purchaseorderstatus WHERE statusId = ?",
+      [statusId]
+    );
     if (result.affectedRows === 0) {
-      return res.send("data not found");
+      return res.status(404).send({ message: "Data not found" });
     }
-    return res.send("delete data successfully");
-  });
+
+    res.send({ message: "Deleted data successfully" });
+  } catch (err) {
+    res.status(500).send({ message: "Error deleting data" });
+  }
 });
+
 module.exports = router;

@@ -14,7 +14,6 @@ app.use("/suppliers", require("./routers/suppliers"));
 app.use("/companyType", require("./routers/company"));
 app.use("/products", require("./routers/products"));
 app.use("/productCategory", require("./routers/productCategory"));
-app.use("/purchaseOrderDetail", require("./routers/purchaseOrderDetail"));
 app.use("/purchases", require("./routers/purchase"));
 app.use("/purchaseStatus", require("./routers/purchaseOrderStatus"));
 app.use("/productSupplier", require("./routers/productSupplier"));
