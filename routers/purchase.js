@@ -1,7 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../config/db");
-router.get("/", async (req, res) => {
+const verifyToken = require("../middleware/authMiddleware");
+const roleMiddileware = require("../middleware/roleMiddleware");
+router.get("/", verifyToken, roleMiddileware("admin"), async (req, res) => {
   try {
     const [result] = await db.execute("SELECT * FROM purchase");
     return res.status(200).json(result);
@@ -10,7 +12,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.post("/", async (req, res) => {
+router.post("/", verifyToken, roleMiddileware("admin"), async (req, res) => {
   const {
     vendorId,
     submittedById,
@@ -111,60 +113,66 @@ router.post("/", async (req, res) => {
     if (connection) connection.release(); // Release the connection
   }
 });
-router.put("/:purchaseOrderId/update-status", async (req, res) => {
-  const { purchaseOrderId } = req.params;
-  const { statusId } = req.body;
-  const Timestamp = new Date(); // Current Date & Time
-  const currentTimestamp = Timestamp.toLocaleDateString();
-  try {
-    // Get the current status of the order
-    const [existingOrder] = await db.execute(
-      "SELECT statusId FROM purchase WHERE purchaseOrderId = ?",
-      [purchaseOrderId]
-    );
+router.put(
+  "/:purchaseOrderId/update-status",
+  verifyToken,
+  roleMiddileware("admin"),
+  async (req, res) => {
+    const { purchaseOrderId } = req.params;
+    const { statusId } = req.body;
+    const Timestamp = new Date(); // Current Date & Time
+    const currentTimestamp = Timestamp.toLocaleDateString();
+    try {
+      // Get the current status of the order
+      const [existingOrder] = await db.execute(
+        "SELECT statusId FROM purchase WHERE purchaseOrderId = ?",
+        [purchaseOrderId]
+      );
 
-    if (existingOrder.length === 0) {
-      return res.status(404).json({ message: "Purchase order not found" });
+      if (existingOrder.length === 0) {
+        return res.status(404).json({ message: "Purchase order not found" });
+      }
+
+      const currentStatus = existingOrder[0].statusId;
+
+      // Define status transition logic
+      let updateQuery = "UPDATE purchase SET statusId = ?, ";
+      let params = [statusId, purchaseOrderId];
+
+      if (currentStatus === 3 && statusId === 4) {
+        updateQuery += "submittedDate = ?, ";
+        params.unshift(currentTimestamp);
+      } else if (currentStatus === 4 && statusId === 1) {
+        updateQuery += "approvedDate = ?, ";
+        params.unshift(currentTimestamp);
+      } else if (currentStatus === 1 && statusId === 5) {
+        updateQuery += "receivedDate = ?, ";
+        params.unshift(currentTimestamp);
+      } else if (currentStatus === 5 && statusId === 2) {
+        updateQuery += "paymentDate = ?, ";
+        params.unshift(currentTimestamp);
+      } else {
+        return res.status(400).json({ message: "Invalid status transition" });
+      }
+
+      // Remove last comma and add WHERE clause
+      updateQuery = updateQuery.slice(0, -2) + " WHERE purchaseOrderId = ?";
+
+      const [result] = await db.execute(updateQuery, params);
+
+      if (result.affectedRows === 0) {
+        return res.status(400).json({ message: "Status update failed" });
+      }
+
+      res.status(200).json({
+        message: "Status updated successfully",
+        newStatusId: statusId,
+      });
+    } catch (error) {
+      res.status(500).json({ message: error.message });
     }
-
-    const currentStatus = existingOrder[0].statusId;
-
-    // Define status transition logic
-    let updateQuery = "UPDATE purchase SET statusId = ?, ";
-    let params = [statusId, purchaseOrderId];
-
-    if (currentStatus === 3 && statusId === 4) {
-      updateQuery += "submittedDate = ?, ";
-      params.unshift(currentTimestamp);
-    } else if (currentStatus === 4 && statusId === 1) {
-      updateQuery += "approvedDate = ?, ";
-      params.unshift(currentTimestamp);
-    } else if (currentStatus === 1 && statusId === 5) {
-      updateQuery += "receivedDate = ?, ";
-      params.unshift(currentTimestamp);
-    } else if (currentStatus === 5 && statusId === 2) {
-      updateQuery += "paymentDate = ?, ";
-      params.unshift(currentTimestamp);
-    } else {
-      return res.status(400).json({ message: "Invalid status transition" });
-    }
-
-    // Remove last comma and add WHERE clause
-    updateQuery = updateQuery.slice(0, -2) + " WHERE purchaseOrderId = ?";
-
-    const [result] = await db.execute(updateQuery, params);
-
-    if (result.affectedRows === 0) {
-      return res.status(400).json({ message: "Status update failed" });
-    }
-
-    res
-      .status(200)
-      .json({ message: "Status updated successfully", newStatusId: statusId });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
   }
-});
+);
 router.put("/:purchaseOrderId/update-product", async (req, res) => {
   const { purchaseOrderId } = req.params;
   const { oldProductId, newProductId, quantity, unitCost } = req.body;
@@ -208,31 +216,36 @@ router.put("/:purchaseOrderId/update-product", async (req, res) => {
   }
 });
 
-router.delete("/:id", async (req, res) => {
-  const { id } = req.params;
+router.delete(
+  "/:id",
+  verifyToken,
+  roleMiddileware("admin"),
+  async (req, res) => {
+    const { id } = req.params;
 
-  try {
-    // First, delete purchaseOrderDetails related to the purchaseOrder
-    await db.execute(
-      "DELETE FROM purchaseOrderDetail WHERE purchaseOrderId = ?",
-      [id]
-    );
+    try {
+      // First, delete purchaseOrderDetails related to the purchaseOrder
+      await db.execute(
+        "DELETE FROM purchaseOrderDetail WHERE purchaseOrderId = ?",
+        [id]
+      );
 
-    // Then, delete the purchaseOrder
-    const [deleteResult] = await db.execute(
-      "DELETE FROM purchase WHERE purchaseOrderId = ?",
-      [id]
-    );
+      // Then, delete the purchaseOrder
+      const [deleteResult] = await db.execute(
+        "DELETE FROM purchase WHERE purchaseOrderId = ?",
+        [id]
+      );
 
-    if (deleteResult.affectedRows === 0) {
-      return res.status(404).json({ message: "Purchase order not found" });
+      if (deleteResult.affectedRows === 0) {
+        return res.status(404).json({ message: "Purchase order not found" });
+      }
+
+      res.status(200).json({ message: "Purchase order deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ message: error.message });
     }
-
-    res.status(200).json({ message: "Purchase order deleted successfully" });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
   }
-});
+);
 
 module.exports = router;
 

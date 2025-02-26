@@ -17,6 +17,7 @@ app.use("/productCategory", require("./routers/productCategory"));
 app.use("/purchases", require("./routers/purchase"));
 app.use("/purchaseStatus", require("./routers/purchaseOrderStatus"));
 app.use("/productSupplier", require("./routers/productSupplier"));
+app.use("/masterstudy", require("./routers/masterscheudling"));
 // app.use("/uploads", require("./routers/imageUpload"));
 app.use("/api/auth", require("./routers/loginRoute"));
 app.use("/api/user", require("./routers/userRoute"));
