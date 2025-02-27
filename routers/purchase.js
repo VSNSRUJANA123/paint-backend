@@ -13,7 +13,7 @@ router.get("/", verifyToken, roleMiddileware("admin"), async (req, res) => {
 });
 
 router.post("/", verifyToken, roleMiddileware("admin"), async (req, res) => {
-  const {
+  let {
     vendorId,
     submittedById,
     approvedById,
@@ -37,6 +37,13 @@ router.post("/", verifyToken, roleMiddileware("admin"), async (req, res) => {
   ) {
     return res.status(400).json({ message: "Missing required fields" });
   }
+  recievedDate = recievedDate ?? null;
+  shippingFee = shippingFee ?? 0.0; // Default to 0.00
+  taxamount = taxamount ?? 0.0; // Default to 0.00
+  paymentDate = paymentDate ?? null;
+  paymentAmount = paymentAmount ?? 0; // Default to 0
+  paymentMethod = paymentMethod ?? null;
+  notes = notes ?? "";
   let connection;
   try {
     connection = await db.getConnection();
@@ -69,15 +76,16 @@ router.post("/", verifyToken, roleMiddileware("admin"), async (req, res) => {
     let totalAmount = 0;
 
     // Insert into purchaseOrderDetails for each product
+    // const { ProductId, QuantityPerUnit, StandardUnitCost } = product;
     for (const product of products) {
-      const { ProductId, QuantityPerUnit, StandardUnitCost } = product;
+      const { ProductID, QuantityPerUnit, StandardUnitCost } = product;
       // Ensure the product exists
       const [productData] = await connection.execute(
         "SELECT StandardUnitCost FROM Products WHERE ProductID = ?",
-        [ProductId]
+        [ProductID]
       );
       if (productData.length === 0) {
-        throw new Error(`Product with ID ${ProductId} not found`);
+        throw new Error(`Product with ID ${ProductID} not found`);
       }
       const lineTotal = QuantityPerUnit * StandardUnitCost;
       totalAmount += lineTotal;
@@ -91,7 +99,7 @@ router.post("/", verifyToken, roleMiddileware("admin"), async (req, res) => {
         [
           newPurchaseOrderDetailId,
           newPurchaseOrderId,
-          ProductId,
+          ProductID,
           QuantityPerUnit,
           StandardUnitCost,
         ]
@@ -103,9 +111,10 @@ router.post("/", verifyToken, roleMiddileware("admin"), async (req, res) => {
       [totalAmount, newPurchaseOrderId]
     );
     await connection.commit(); // Commit transaction
-    return res
-      .status(201)
-      .json({ message: "Purchase order created successfully" });
+    return res.status(201).json({
+      message: "Purchase order created successfully",
+      purchaseData: { ...req.body },
+    });
   } catch (error) {
     if (connection) await connection.rollback(); // Rollback on error
     return res.status(500).json({ message: error.message });
