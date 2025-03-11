@@ -69,17 +69,10 @@ router.post("/login", async (req, res) => {
       .status(403)
       .send({ message: "user doesn't exist create account" });
   } catch (err) {
-    return res.status(500).json({ message: err.message });
+    return res.status(500).json({ message: err });
   }
 });
-router.post("/logout", (req, res) => {
-  try {
-    res.clearCookie("token");
-    return res.status(200).json({ message: "logout successfully" });
-  } catch (err) {
-    return res.status(403).json({ message: "internal server error" });
-  }
-});
+
 router.get("/", verifyToken, roleMiddileware("admin"), async (req, res) => {
   // console.log("ok");
   try {
