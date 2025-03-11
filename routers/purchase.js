@@ -17,7 +17,7 @@ router.post("/", verifyToken, roleMiddileware("admin"), async (req, res) => {
     vendorId,
     submittedById,
     approvedById,
-    statusId,
+    statusId = "new",
     recievedDate,
     shippingFee,
     taxamount,
@@ -37,10 +37,10 @@ router.post("/", verifyToken, roleMiddileware("admin"), async (req, res) => {
   ) {
     return res.status(400).json({ message: "Missing required fields" });
   }
-  recievedDate = recievedDate ?? null;
+  recievedDate = statusId > 4 ? recievedDate : null;
   shippingFee = shippingFee ?? 0.0; // Default to 0.00
   taxamount = taxamount ?? 0.0; // Default to 0.00
-  paymentDate = paymentDate ?? null;
+  paymentDate = paymentDate > 4 ? paymentDate : null;
   paymentAmount = paymentAmount ?? 0; // Default to 0
   paymentMethod = paymentMethod ?? null;
   notes = notes ?? "";
@@ -76,7 +76,6 @@ router.post("/", verifyToken, roleMiddileware("admin"), async (req, res) => {
     let totalAmount = 0;
 
     // Insert into purchaseOrderDetails for each product
-    // const { ProductId, QuantityPerUnit, StandardUnitCost } = product;
     for (const product of products) {
       const { ProductID, QuantityPerUnit, StandardUnitCost } = product;
       // Ensure the product exists
@@ -108,7 +107,7 @@ router.post("/", verifyToken, roleMiddileware("admin"), async (req, res) => {
     // Update total amount in purchaseOrder
     await connection.execute(
       `UPDATE purchase SET totalAmount = ? WHERE purchaseOrderId = ?`,
-      [totalAmount, newPurchaseOrderId]
+      [totalAmount + shippingFee + taxamount, newPurchaseOrderId]
     );
     await connection.commit(); // Commit transaction
     return res.status(201).json({

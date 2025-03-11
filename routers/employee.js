@@ -21,7 +21,7 @@ router.get("/", verifyToken, roleMiddleware("admin"), async (req, res) => {
 router.get("/:id", verifyToken, roleMiddleware("admin"), async (req, res) => {
   try {
     const { id } = req.params;
-    const query = "SELECT * FROM employees WHERE id = ?";
+    const query = `SELECT * FROM employees WHERE id = ?`;
     const [result] = await db.execute(query, [id]);
 
     if (result.length === 0) {
@@ -49,7 +49,7 @@ router.post("/", verifyToken, roleMiddleware("admin"), async (req, res) => {
       status,
     } = req.body;
 
-    if (!firstname || !phonenumber || !company_name || !address) {
+    if (!firstname || !phonenumber || !address) {
       return res.status(400).json({ error: "Required fields are missing" });
     }
 
@@ -112,8 +112,10 @@ router.put("/:id", verifyToken, roleMiddleware("admin"), async (req, res) => {
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: "Employee not found" });
     }
-
-    res.status(200).json({ message: "Employee updated successfully" });
+    res.status(200).json({
+      message: "Employee updated successfully",
+      employeeData: { id, ...req.body },
+    });
   } catch (err) {
     res
       .status(500)

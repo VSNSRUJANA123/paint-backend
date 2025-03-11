@@ -11,7 +11,7 @@ const verifyToken = (req, res, next) => {
     return res.status(403).json({ message: "invalid token" });
   }
   const getToken = authorization.split(" ")[1];
-  // console.log(getToken, "token");
+  // console.log(authorization, "token");
   if (!getToken) {
     return res.status(403).json({ error: "No token provided" });
   }

@@ -84,7 +84,7 @@ router.post("/", verifyToken, roleMiddleware("admin"), async (req, res) => {
       supplierData: req.body,
     });
   } catch (error) {
-    res.status(500).json({ message: "Failed to add supplier" });
+    res.status(500).json({ message: error.message });
   }
 });
 

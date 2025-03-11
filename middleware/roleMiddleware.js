@@ -5,7 +5,7 @@ const roleMiddileware = (...roles) => {
       return res.status(403).json({ error: "User role not found" });
     }
     if (!roles.includes(req.user.role)) {
-      return res.status(403).send("access denied");
+      return res.status(403).send({ message: "access denied" });
     }
     next();
   };
