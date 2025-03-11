@@ -1,14 +1,10 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
-const cookie = require("cookie-parser");
 const router = express.Router();
 const dbConnection = require("../config/db");
-const cors = require("cors");
 const verifyToken = require("../middleware/authMiddleware");
 const roleMiddileware = require("../middleware/roleMiddleware");
-const app = express();
-app.use(cors());
 
 router.post("/register", async (req, res) => {
   const { username, password, role = "user" } = req.body;
@@ -72,7 +68,6 @@ router.post("/login", async (req, res) => {
     return res.status(500).json({ message: err });
   }
 });
-
 router.get("/", verifyToken, roleMiddileware("admin"), async (req, res) => {
   // console.log("ok");
   try {
