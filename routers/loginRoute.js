@@ -35,12 +35,13 @@ router.post("/register", async (req, res) => {
 
 router.post("/login", async (req, res) => {
   const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(403).send("required username and password");
+  }
   try {
-    if (!username || !password) {
-      return res.status(403).send("required username and password");
-    }
     const sqlQuery = "select * from user where username=?";
     const [result] = await dbConnection.execute(sqlQuery, [username]);
+    // console.log(result);
     if (result.length > 0) {
       const isPasswordValid = await bcrypt.compare(
         password,
@@ -51,11 +52,6 @@ router.post("/login", async (req, res) => {
       }
       const token = jwt.sign({ role: result[0].role }, process.env.JWT_SECRET, {
         expiresIn: "30d",
-      });
-      res.cookie("token", token, {
-        httpOnly: true,
-        secure: false,
-        maxAge: 2592000000,
       });
       return res
         .status(200)

@@ -23,6 +23,9 @@ app.use("/purchaseOrderDetail", require("./routers/purchaseOrderDetail"));
 app.use("/api/auth", require("./routers/loginRoute"));
 app.use("/api/user", require("./routers/userRoute"));
 const PORT = process.env.PORT || 5000;
+app.get("/working", () => {
+  return res.send({ message: "hlo hi welcome" });
+});
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
