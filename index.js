@@ -8,7 +8,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use("/uploads", express.static("uploads"));
 app.use(express.json());
 app.use(cookie());
-app.use(cors());
+app.use(cors({}));
 app.use("/employees", require("./routers/employee"));
 app.use("/suppliers", require("./routers/suppliers"));
 app.use("/companyType", require("./routers/company"));
@@ -23,7 +23,7 @@ app.use("/purchaseOrderDetail", require("./routers/purchaseOrderDetail"));
 app.use("/api/auth", require("./routers/loginRoute"));
 app.use("/api/user", require("./routers/userRoute"));
 const PORT = process.env.PORT || 5000;
-app.get("/working", () => {
+app.get("/working", (req, res) => {
   return res.send({ message: "hlo hi welcome" });
 });
 app.listen(PORT, () => {
